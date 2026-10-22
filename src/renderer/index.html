@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' data: blob:;" />
+  <title>PixDesk · 看图修图</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app">
+  <!-- 顶部工具栏 -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◆</span><span>PixDesk</span>
+    </div>
+
+    <div class="group">
+      <button class="btn" id="btnOpenFiles">打开图片</button>
+      <button class="btn" id="btnOpenFolder">打开文件夹</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="group">
+      <button class="icon-btn" id="btnUndo" title="撤销 (Ctrl+Z)">↶</button>
+      <button class="icon-btn" id="btnRedo" title="重做 (Ctrl+Y)">↷</button>
+      <button class="icon-btn" id="btnReset" title="重置全部修改">⟲</button>
+    </div>
+
+    <div class="title-block">
+      <div class="fname" id="fileName">未打开文件</div>
+      <div class="fmeta" id="fileIndex"></div>
+    </div>
+
+    <div class="group right">
+      <div class="zoom-box" title="缩放">
+        <button class="icon-btn" id="btnZoomOut">−</button>
+        <span id="zoomLabel">100%</span>
+        <button class="icon-btn" id="btnZoomIn">+</button>
+      </div>
+      <button class="btn ghost" id="btnFit" title="适应窗口 (Ctrl+0)">适应</button>
+      <button class="btn ghost" id="btnActual" title="实际大小 (Ctrl+1)">1:1</button>
+      <div class="divider"></div>
+      <button class="btn" id="btnMode" title="切换 编辑 / 浏览">编辑</button>
+      <button class="btn primary" id="btnSave" title="保存 (Ctrl+S)">保存</button>
+      <button class="btn" id="btnExport" title="导出 (Ctrl+E)">导出</button>
+    </div>
+  </header>
+
+  <!-- 主体 -->
+  <main class="bench">
+    <!-- 缩略图栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <span class="folder" id="folderName">未选择文件夹</span>
+        <button class="icon-btn sm" id="btnReloadFolder" title="重新扫描">⟳</button>
+      </div>
+      <input class="filter-input" id="filterInput" placeholder="筛选文件名…" />
+      <div class="thumbs" id="thumbs"></div>
+      <div class="sidebar-foot" id="countLabel">0 张</div>
+    </aside>
+
+    <!-- 画布区 -->
+    <section class="stage" id="stage">
+      <canvas id="view"></canvas>
+
+      <div class="empty" id="empty">
+        <div class="empty-art">
+          <svg viewBox="0 0 96 96" width="96" height="96" aria-hidden="true">
+            <rect x="8" y="16" width="80" height="64" rx="8" fill="#eaf1ff" stroke="#b9cdf7" stroke-width="2"/>
+            <circle cx="32" cy="38" r="7" fill="#7aa7f5"/>
+            <path d="M16 70 L38 48 L54 62 L68 50 L80 70 Z" fill="#b9cdf7"/>
+          </svg>
+        </div>
+        <h2>拖入图片，或打开一个文件夹</h2>
+        <p>支持 JPG · PNG · WebP · GIF · BMP · AVIF · SVG · TIFF</p>
+        <div class="row center gap8">
+          <button class="btn primary" id="emptyOpenFolder">打开文件夹</button>
+          <button class="btn" id="emptyOpenFiles">打开图片</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+      <div class="slide-hint" id="slideHint">幻灯片播放中 · Esc 退出</div>
+      <div class="busy" id="busy"><div class="spinner"></div><span id="busyText">处理中…</span></div>
+    </section>
+
+    <!-- 右侧编辑面板 -->
+    <aside class="panel" id="panel">
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-tab="adjust">调整</button>
+        <button class="tab" data-tab="crop">裁剪</button>
+        <button class="tab" data-tab="preset">滤镜</button>
+        <button class="tab" data-tab="annotate">标注</button>
+        <button class="tab" data-tab="watermark">水印</button>
+        <button class="tab" data-tab="export">导出</button>
+      </nav>
+
+      <div class="panes" id="panes">
+        <!-- 调整 -->
+        <div class="pane active" data-pane="adjust">
+          <div class="pane-title">光影与色彩</div>
+          <div class="slider" data-adjust="brightness"><label>亮度</label><input type="range" min="20" max="200" step="1" value="100"><output>100</output></div>
+          <div class="slider" data-adjust="exposure"><label>曝光</label><input type="range" min="20" max="200" step="1" value="100"><output>100</output></div>
+          <div class="slider" data-adjust="contrast"><label>对比度</label><input type="range" min="20" max="200" step="1" value="100"><output>100</output></div>
+          <div class="slider" data-adjust="saturation"><label>饱和度</label><input type="range" min="0" max="200" step="1" value="100"><output>100</output></div>
+          <div class="slider" data-adjust="temperature"><label>色温</label><input type="range" min="-100" max="100" step="1" value="0"><output>0</output></div>
+          <div class="slider" data-adjust="sharpen"><label>锐化</label><input type="range" min="0" max="100" step="1" value="0"><output>0</output></div>
+          <div class="slider" data-adjust="blur"><label>模糊</label><input type="range" min="0" max="20" step="0.5" value="0"><output>0</output></div>
+          <div class="slider" data-adjust="vignette"><label>暗角</label><input type="range" min="0" max="100" step="1" value="0"><output>0</output></div>
+          <button class="btn block" id="btnResetAdjust">重置调整</button>
+        </div>
+
+        <!-- 裁剪 -->
+        <div class="pane" data-pane="crop">
+          <div class="pane-title">裁剪比例</div>
+          <div class="chips" id="aspectChips">
+            <button class="chip active" data-aspect="free">自由</button>
+            <button class="chip" data-aspect="1:1">1:1</button>
+            <button class="chip" data-aspect="4:3">4:3</button>
+            <button class="chip" data-aspect="3:2">3:2</button>
+            <button class="chip" data-aspect="16:9">16:9</button>
+            <button class="chip" data-aspect="3:4">3:4</button>
+            <button class="chip" data-aspect="2:3">2:3</button>
+            <button class="chip" data-aspect="9:16">9:16</button>
+          </div>
+          <p class="hint">在图上拖拽出裁剪框，然后点「应用裁剪」。</p>
+          <div class="crop-info" id="cropInfo">未选择裁剪区域</div>
+          <div class="row gap8">
+            <button class="btn primary grow" id="btnApplyCrop">应用裁剪</button>
+            <button class="btn grow" id="btnCancelCrop">取消</button>
+          </div>
+          <button class="btn block ghost" id="btnResetCrop">恢复完整画面</button>
+
+          <div class="pane-title mt16">方向</div>
+          <div class="row gap8">
+            <button class="btn grow" id="btnRotateL">↺ 左转 90°</button>
+            <button class="btn grow" id="btnRotateR">↻ 右转 90°</button>
+          </div>
+          <div class="row gap8 mt8">
+            <button class="btn grow" id="btnFlipH">水平翻转</button>
+            <button class="btn grow" id="btnFlipV">垂直翻转</button>
+          </div>
+          <div class="slider mt12" id="fineRow"><label>微调角度</label><input type="range" id="fineAngle" min="-45" max="45" step="0.5" value="0"><output id="fineVal">0°</output></div>
+        </div>
+
+        <!-- 滤镜 -->
+        <div class="pane" data-pane="preset">
+          <div class="pane-title">滤镜预设</div>
+          <div class="presets" id="presets"></div>
+          <p class="hint">预设会叠加在「调整」参数之上，可随时切回「原图」。</p>
+        </div>
+
+        <!-- 标注 -->
+        <div class="pane" data-pane="annotate">
+          <div class="pane-title">标注工具</div>
+          <div class="tools" id="annoTools">
+            <button class="tool active" data-tool="pan" title="移动/平移">✥<span>移动</span></button>
+            <button class="tool" data-tool="brush" title="画笔">✎<span>画笔</span></button>
+            <button class="tool" data-tool="arrow" title="箭头">↗<span>箭头</span></button>
+            <button class="tool" data-tool="rect" title="矩形">▭<span>矩形</span></button>
+            <button class="tool" data-tool="ellipse" title="椭圆">◯<span>椭圆</span></button>
+            <button class="tool" data-tool="text" title="文字">T<span>文字</span></button>
+            <button class="tool" data-tool="mosaic" title="马赛克">▦<span>马赛克</span></button>
+          </div>
+
+          <div class="pane-title mt16">颜色</div>
+          <div class="swatches" id="swatches"></div>
+
+          <div class="slider mt8"><label>粗细</label><input type="range" id="brushWidth" min="2" max="80" step="1" value="22"><output id="brushWidthVal">22</output></div>
+
+          <div class="field mt8">
+            <label>文字内容</label>
+            <input type="text" id="brushText" value="点此输入文字" />
+          </div>
+          <div class="slider"><label>字号</label><input type="range" id="brushSize" min="2" max="20" step="0.5" value="6"><output id="brushSizeVal">6</output></div>
+
+          <div class="crop-info" id="annoInfo">共 0 个标注</div>
+          <button class="btn block" id="btnClearAnno">清空全部标注</button>
+        </div>
+
+        <!-- 水印 -->
+        <div class="pane" data-pane="watermark">
+          <div class="pane-title">文字水印</div>
+          <label class="switch">
+            <input type="checkbox" id="wmEnabled" />
+            <span>启用水印</span>
+          </label>
+          <div class="field mt8">
+            <label>水印文字</label>
+            <input type="text" id="wmText" value="© PixDesk" />
+          </div>
+          <div class="slider"><label>字号</label><input type="range" id="wmSize" min="1" max="20" step="0.5" value="4"><output id="wmSizeVal">4</output></div>
+          <div class="slider"><label>不透明度</label><input type="range" id="wmOpacity" min="5" max="100" step="1" value="55"><output id="wmOpacityVal">55</output></div>
+          <div class="field">
+            <label>颜色</label>
+            <input type="color" id="wmColor" value="#ffffff" />
+          </div>
+          <div class="field">
+            <label>位置</label>
+            <select id="wmPos">
+              <option value="tl">左上</option>
+              <option value="tc">顶部居中</option>
+              <option value="tr">右上</option>
+              <option value="ml">左侧居中</option>
+              <option value="mc">正中</option>
+              <option value="mr">右侧居中</option>
+              <option value="bl">左下</option>
+              <option value="bc">底部居中</option>
+              <option value="br" selected>右下</option>
+            </select>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="wmTile" />
+            <span>平铺水印</span>
+          </label>
+        </div>
+
+        <!-- 导出 -->
+        <div class="pane" data-pane="export">
+          <div class="pane-title">导出设置</div>
+          <div class="field">
+            <label>格式</label>
+            <select id="expFormat">
+              <option value="png">PNG（无损 / 支持透明）</option>
+              <option value="jpeg" selected>JPEG（体积小）</option>
+              <option value="webp">WebP（现代格式）</option>
+            </select>
+          </div>
+          <div class="slider" id="qualityRow"><label>质量</label><input type="range" id="expQuality" min="30" max="100" step="1" value="92"><output id="expQualityVal">92</output></div>
+          <div class="slider"><label>尺寸</label><input type="range" id="expScale" min="10" max="100" step="5" value="100"><output id="expScaleVal">100%</output></div>
+          <div class="crop-info" id="expInfo">输出尺寸 —</div>
+
+          <button class="btn primary block" id="btnSaveAs">另存为…</button>
+          <button class="btn block" id="btnBatch">批量应用到整个文件夹…</button>
+          <p class="hint">批量导出会把当前全部调整/滤镜/标注/水印套用到文件夹内所有图片，输出到所选的输出目录。</p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- 状态栏 -->
+  <footer class="statusbar">
+    <span class="path" id="statusPath">—</span>
+    <span class="spacer"></span>
+    <span id="statusSize">—</span>
+    <span id="statusZoom">—</span>
+    <span class="tip">滚轮缩放 · 空格拖动 · ← → 切换 · E 编辑</span>
+  </footer>
+</div>
+
+<script src="js/store.js"></script>
+<script src="js/imaging.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

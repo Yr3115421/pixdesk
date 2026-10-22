@@ -1,0 +1,37 @@
+{
+  "name": "pixdesk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PixDesk - 轻量级桌面看图 / 修图工具，Electron + Canvas 实现，零运行时依赖",
+  "main": "src/main/main.js",
+  "author": "Yr3115421",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "smoke": "electron scripts/smoke.js",
+    "shot": "electron scripts/screenshot.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0"
+  },
+  "build": {
+    "appId": "com.pixdesk.app",
+    "productName": "PixDesk",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}
